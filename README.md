@@ -2,13 +2,17 @@
 
 ### What is it?
 
-**homebridge-minimal-http-blinds** is a minimalistic HTTP blinds or roller shutters management plugin for homebridge.  
-The important thing is that **that supports percentages**.
+**homebridge-minimal-http-blinds** is a minimalistic HTTP blinds or roller shutters management plugin for homebridge.
+
+The features:
+- You can control your own blinds/roller shutters apparatus with three minimalistic HTTP requests.
+- The control is not a simple binary open/close: **it support percentages**. You can open your blinds at 50% or 65% for instance.
+- Your blinds can still be manually operated. As long at the `get_current_position_url` returns the right value, this plugin will update iOS Home app in real time.
 
 ### Who is it for?
 
-Anyone who, just like me, don't know anything about homebridge
-but still want a straightforward way to communicate with your own home-made Raspberry Pi blinds/roller shutters controller. 
+Anyone who, just like me, don't know much about homebridge
+but still want a straightforward way to communicate with your own home-made Raspberry Pi blinds/roller shutters controller.
 
 ### How to use it
 
