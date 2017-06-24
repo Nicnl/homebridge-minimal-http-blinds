@@ -74,10 +74,13 @@ MinimalisticHttpBlinds.prototype.start_current_state_polling = function() {
 };
 
 MinimalisticHttpBlinds.prototype.update_current_position = function() {
+    this.log('STARTING CURRENT POSITION REQUEST');
     request({
         url: this.get_current_position_url,
-        method: this.get_current_position_method
+        method: this.get_current_position_method,
+        timeout: 5000
     }, function(error, response, body) {
+        this.log('FINISH CURRENT POSITION REQUEST');
         if (error || response.statusCode != this.get_current_position_expected_response_code) {
             this.log('Error when polling current position: ' + body);
 
@@ -133,7 +136,8 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
 MinimalisticHttpBlinds.prototype.update_current_state = function() {
     request({
         url: this.get_current_state_url,
-        method: this.get_current_state_method
+        method: this.get_current_state_method,
+        timeout: 5000
     }, function(error, response, body) {
         if (error || response.statusCode != this.get_current_state_expected_response_code) {
             this.log('Error when polling current state: ' + body);
