@@ -80,7 +80,16 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
     }, function(error, response, body) {
         if (error || response.statusCode != this.get_current_position_expected_response_code) {
             this.log('Error when polling current position: ' + body);
+
+            this.get_current_position_callbacks.forEach(function (callback) {
+                this.log('calling callback with nothing...');
+                callback(null);
+            }.bind(this));
+            this.log('DUE TO ERROR: responded nothing to ' + this.get_current_position_callbacks.length + ' CurrentPosition callbacks...');
+            this.get_current_position_callbacks = [];
+
             setTimeout(this.start_current_position_polling.bind(this), this.get_current_state_polling_millis * 20);
+
             return;
         }
 
@@ -121,6 +130,13 @@ MinimalisticHttpBlinds.prototype.update_current_state = function() {
     }, function(error, response, body) {
         if (error || response.statusCode != this.get_current_state_expected_response_code) {
             this.log('Error when polling current state: ' + body);
+
+            this.get_current_state_callbacks.forEach(function (callback) {
+                callback(null);
+            }.bind(this));
+            this.log('DUE TO ERROR: responded nothing to ' + this.get_current_state_callbacks.length + ' PositionState callbacks...');
+            this.get_current_state_callbacks = [];
+
             setTimeout(this.start_current_state_polling.bind(this), this.get_current_state_polling_millis * 20);
             return;
         }
