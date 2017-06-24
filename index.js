@@ -1,4 +1,4 @@
-var request = require("request");
+var request = require('request');
 var Service, Characteristic;
 
 module.exports = function(homebridge) {
@@ -74,29 +74,13 @@ MinimalisticHttpBlinds.prototype.start_current_state_polling = function() {
 };
 
 MinimalisticHttpBlinds.prototype.update_current_position = function() {
-    this.log('STARTING CURRENT POSITION REQUEST');
     request({
         url: this.get_current_position_url,
         method: this.get_current_position_method,
         timeout: 5000
     }, function(error, response, body) {
-        this.log('FINISH CURRENT POSITION REQUEST');
         if (error || response.statusCode != this.get_current_position_expected_response_code) {
             this.log('Error when polling current position: ' + body);
-
-            if (this.get_current_position_callbacks.length > 0) {
-                this.get_current_position_callbacks.forEach(function (callback) {
-                    this.log('calling callback with nothing...');
-                    callback(null, 50);
-                }.bind(this));
-                this.log('DUE TO ERROR: responded VALUE(50) to ' + this.get_current_position_callbacks.length + ' CurrentPosition callbacks...');
-                this.get_current_position_callbacks = [];
-            }
-            this.service.getCharacteristic(Characteristic.CurrentPosition).setValue(50);
-            this.service.getCharacteristic(Characteristic.TargetPosition).setValue(50, null, {
-                'plz_do_not_actually_move_the_blinds': true
-            });
-
             this.start_current_position_polling();
             return;
         }
@@ -139,16 +123,6 @@ MinimalisticHttpBlinds.prototype.update_current_state = function() {
     }, function(error, response, body) {
         if (error || response.statusCode != this.get_current_state_expected_response_code) {
             this.log('Error when polling current state: ' + body);
-
-            if (this.get_current_state_callbacks.length > 0) {
-                this.get_current_state_callbacks.forEach(function (callback) {
-                    callback(null, 2);
-                }.bind(this));
-                this.log('DUE TO ERROR: responded state IDLE(2) to ' + this.get_current_state_callbacks.length + ' PositionState callbacks...');
-                this.get_current_state_callbacks = [];
-            }
-            this.service.getCharacteristic(Characteristic.PositionState).setValue(2);
-
             this.start_current_state_polling();
             return;
         }
