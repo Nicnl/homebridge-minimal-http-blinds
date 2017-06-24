@@ -87,13 +87,13 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
             if (this.get_current_position_callbacks.length > 0) {
                 this.get_current_position_callbacks.forEach(function (callback) {
                     this.log('calling callback with nothing...');
-                    callback(null, 100);
+                    callback(null, 50);
                 }.bind(this));
-                this.log('DUE TO ERROR: responded VALUE(100) to ' + this.get_current_position_callbacks.length + ' CurrentPosition callbacks...');
+                this.log('DUE TO ERROR: responded VALUE(50) to ' + this.get_current_position_callbacks.length + ' CurrentPosition callbacks...');
                 this.get_current_position_callbacks = [];
 
-                this.service.getCharacteristic(Characteristic.CurrentPosition).setValue(100);
-                this.service.getCharacteristic(Characteristic.TargetPosition).setValue(100, null, {
+                this.service.getCharacteristic(Characteristic.CurrentPosition).setValue(50);
+                this.service.getCharacteristic(Characteristic.TargetPosition).setValue(50, null, {
                     'plz_do_not_actually_move_the_blinds': true
                 });
             }
