@@ -84,7 +84,7 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
             if (this.get_current_position_callbacks.length > 0) {
                 this.get_current_position_callbacks.forEach(function (callback) {
                     this.log('calling callback with nothing...');
-                    callback(null, -1);
+                    callback(null, 101);
                 }.bind(this));
                 this.log('DUE TO ERROR: responded VALUE(-1) to ' + this.get_current_position_callbacks.length + ' CurrentPosition callbacks...');
                 this.get_current_position_callbacks = [];
