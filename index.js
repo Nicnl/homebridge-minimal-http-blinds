@@ -86,8 +86,10 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
                     this.log('calling callback with nothing...');
                     callback(null, 101);
                 }.bind(this));
-                this.log('DUE TO ERROR: responded VALUE(-1) to ' + this.get_current_position_callbacks.length + ' CurrentPosition callbacks...');
+                this.log('DUE TO ERROR: responded VALUE(101) to ' + this.get_current_position_callbacks.length + ' CurrentPosition callbacks...');
                 this.get_current_position_callbacks = [];
+
+                this.service.getCharacteristic(Characteristic.CurrentPosition).setValue(101);
             }
 
             setTimeout(this.start_current_position_polling.bind(this), this.get_current_state_polling_millis * 8);
@@ -137,8 +139,9 @@ MinimalisticHttpBlinds.prototype.update_current_state = function() {
                 this.get_current_state_callbacks.forEach(function (callback) {
                     callback(null, 2);
                 }.bind(this));
-                this.log('DUE TO ERROR: responded state IDLE(e) to ' + this.get_current_state_callbacks.length + ' PositionState callbacks...');
+                this.log('DUE TO ERROR: responded state IDLE(2) to ' + this.get_current_state_callbacks.length + ' PositionState callbacks...');
                 this.get_current_state_callbacks = [];
+                this.service.getCharacteristic(Characteristic.PositionState).setValue(2);
             }
 
             setTimeout(this.start_current_state_polling.bind(this), this.get_current_state_polling_millis * 8);
