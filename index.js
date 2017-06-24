@@ -91,12 +91,11 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
                 }.bind(this));
                 this.log('DUE TO ERROR: responded VALUE(50) to ' + this.get_current_position_callbacks.length + ' CurrentPosition callbacks...');
                 this.get_current_position_callbacks = [];
-
-                this.service.getCharacteristic(Characteristic.CurrentPosition).setValue(50);
-                this.service.getCharacteristic(Characteristic.TargetPosition).setValue(50, null, {
-                    'plz_do_not_actually_move_the_blinds': true
-                });
             }
+            this.service.getCharacteristic(Characteristic.CurrentPosition).setValue(50);
+            this.service.getCharacteristic(Characteristic.TargetPosition).setValue(50, null, {
+                'plz_do_not_actually_move_the_blinds': true
+            });
 
             this.start_current_position_polling();
             return;
@@ -147,8 +146,8 @@ MinimalisticHttpBlinds.prototype.update_current_state = function() {
                 }.bind(this));
                 this.log('DUE TO ERROR: responded state IDLE(2) to ' + this.get_current_state_callbacks.length + ' PositionState callbacks...');
                 this.get_current_state_callbacks = [];
-                this.service.getCharacteristic(Characteristic.PositionState).setValue(2);
             }
+            this.service.getCharacteristic(Characteristic.PositionState).setValue(2);
 
             this.start_current_state_polling();
             return;
