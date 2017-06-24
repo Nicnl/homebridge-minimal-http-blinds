@@ -90,6 +90,9 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
                 this.get_current_position_callbacks = [];
 
                 this.service.getCharacteristic(Characteristic.CurrentPosition).setValue(101);
+                this.service.getCharacteristic(Characteristic.TargetPosition).setValue(101, null, {
+                    'plz_do_not_actually_move_the_blinds': true
+                });
             }
 
             setTimeout(this.start_current_position_polling.bind(this), this.get_current_state_polling_millis * 8);
