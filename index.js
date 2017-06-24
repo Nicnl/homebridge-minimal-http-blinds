@@ -98,8 +98,7 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
                 });
             }
 
-            setTimeout(this.start_current_position_polling.bind(this), this.get_current_state_polling_millis * 8);
-
+            this.start_current_position_polling();
             return;
         }
 
@@ -151,7 +150,7 @@ MinimalisticHttpBlinds.prototype.update_current_state = function() {
                 this.service.getCharacteristic(Characteristic.PositionState).setValue(2);
             }
 
-            setTimeout(this.start_current_state_polling.bind(this), this.get_current_state_polling_millis * 8);
+            this.start_current_state_polling();
             return;
         }
 
