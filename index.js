@@ -80,7 +80,7 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
     }, function(error, response, body) {
         if (error || response.statusCode != this.get_current_position_expected_response_code) {
             this.log('Error when polling current position: ' + body);
-            this.start_current_position_polling();
+            setTimeout(this.start_current_position_polling, this.get_current_state_polling_millis * 20);
             return;
         }
 
@@ -121,7 +121,7 @@ MinimalisticHttpBlinds.prototype.update_current_state = function() {
     }, function(error, response, body) {
         if (error || response.statusCode != this.get_current_state_expected_response_code) {
             this.log('Error when polling current state: ' + body);
-            this.start_current_state_polling();
+            setTimeout(this.start_current_state_polling, this.get_current_state_polling_millis * 20);
             return;
         }
 
