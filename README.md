@@ -117,6 +117,8 @@ Once again, that's your part of the job, the one you're supposed to implement in
 
 ________________________________________
 
+[Click here](EXAMPLE.MD) to see an example implementation of this HTTP server.
+
 # That's all
 
 ## Enjoy
