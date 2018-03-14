@@ -47,7 +47,7 @@ As you can see, the Raspberry Pi will need to host an HTTP server providing thre
 
 This example implementation uses Flask, a very simple and easy to use HTTP serving API. 
 
-```
+```python
 from flask import Flask
 app = Flask(__name__)
 
