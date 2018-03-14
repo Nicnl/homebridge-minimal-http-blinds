@@ -62,7 +62,7 @@ def set_target_position(position):
 @app.route('/get/current_position/', methods=['GET'])
 def get_current_position():
     current_position = 100
-    print('This code should physically get the blinds position and not always using 100')
+    print('This code should physically get the blinds position')
 
     return str(current_position), 200
 
