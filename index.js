@@ -79,8 +79,14 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
         method: this.get_current_position_method,
         timeout: 5000
     }, function(error, response, body) {
-        if (error || response.statusCode != this.get_current_position_expected_response_code) {
-            this.log('Error when polling current position: ' + body);
+        if (error) {
+            this.log('Error when polling current position.');
+            this.log(error);
+            this.start_current_position_polling();
+            return;
+        }
+        else if (response.statusCode != this.get_current_position_expected_response_code) {
+            this.log('Unexpected HTTP status code when polling current position. Got: ' + response.statusCode + ', expected:' + this.get_current_position_expected_response_code);
             this.start_current_position_polling();
             return;
         }
@@ -121,9 +127,15 @@ MinimalisticHttpBlinds.prototype.update_current_state = function() {
         method: this.get_current_state_method,
         timeout: 5000
     }, function(error, response, body) {
-        if (error || response.statusCode != this.get_current_state_expected_response_code) {
-            this.log('Error when polling current state: ' + body);
-            this.start_current_state_polling();
+        if (error) {
+            this.log('Error when polling current state.');
+            this.log(error);
+            this.start_current_position_polling();
+            return;
+        }
+        else if (response.statusCode != this.get_current_state_expected_response_code) {
+            this.log('Unexpected HTTP status code when polling current state. Got: ' + response.statusCode + ', expected:' + this.get_current_state_expected_response_code);
+            this.start_current_position_polling();
             return;
         }
 
