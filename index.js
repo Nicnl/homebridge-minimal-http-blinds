@@ -39,8 +39,9 @@ function MinimalisticHttpBlinds(log, config) {
     this.get_current_state_callbacks = [];
 
     // Initializing things
-    this.start_current_position_polling();
-    this.start_current_state_polling();
+    setInterval(this.update_current_position.bind(this), this.get_current_position_polling_millis);
+    setInterval(this.update_current_state.bind(this), this.get_current_state_polling_millis);
+
     this.init_service();
 }
 
@@ -65,14 +66,6 @@ MinimalisticHttpBlinds.prototype.init_service = function() {
     }.bind(this));
 };
 
-MinimalisticHttpBlinds.prototype.start_current_position_polling = function() {
-    setTimeout(this.update_current_position.bind(this), this.get_current_position_polling_millis);
-};
-
-MinimalisticHttpBlinds.prototype.start_current_state_polling = function() {
-    setTimeout(this.update_current_state.bind(this), this.get_current_state_polling_millis);
-};
-
 MinimalisticHttpBlinds.prototype.update_current_position = function() {
     request({
         url: this.get_current_position_url,
@@ -82,12 +75,10 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
         if (error) {
             this.log('Error when polling current position.');
             this.log(error);
-            this.start_current_position_polling();
             return;
         }
         else if (response.statusCode != this.get_current_position_expected_response_code) {
             this.log('Unexpected HTTP status code when polling current position. Got: ' + response.statusCode + ', expected:' + this.get_current_position_expected_response_code);
-            this.start_current_position_polling();
             return;
         }
 
@@ -117,7 +108,6 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
         }
 
         this.current_position = new_position;
-        this.start_current_position_polling();
     }.bind(this));
 };
 
@@ -130,12 +120,10 @@ MinimalisticHttpBlinds.prototype.update_current_state = function() {
         if (error) {
             this.log('Error when polling current state.');
             this.log(error);
-            this.start_current_position_polling();
             return;
         }
         else if (response.statusCode != this.get_current_state_expected_response_code) {
             this.log('Unexpected HTTP status code when polling current state. Got: ' + response.statusCode + ', expected:' + this.get_current_state_expected_response_code);
-            this.start_current_position_polling();
             return;
         }
 
@@ -172,7 +160,6 @@ MinimalisticHttpBlinds.prototype.update_current_state = function() {
         }
 
         this.current_state = new_state;
-        this.start_current_state_polling();
     }.bind(this));
 };
 
