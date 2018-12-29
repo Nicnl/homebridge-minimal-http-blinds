@@ -33,6 +33,8 @@ function MinimalisticHttpBlinds(log, config) {
     // Internal fields
     this.current_position = undefined;
     this.current_state = undefined;
+    this.current_position = 100;
+    this.current_state = 2;
 
     this.get_current_position_callbacks = [];
     this.get_target_position_callbacks = [];
@@ -75,22 +77,20 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
         if (error) {
             this.log('Error when polling current position.');
             this.log(error);
+            this.complete_get_current_position_callbacks(this.current_position);
             return;
         }
         else if (response.statusCode != this.get_current_position_expected_response_code) {
             this.log('Unexpected HTTP status code when polling current position. Got: ' + response.statusCode + ', expected:' + this.get_current_position_expected_response_code);
+            this.complete_get_current_position_callbacks(this.current_position);
             return;
         }
 
         var new_position = parseInt(body);
 
+
         if (this.get_current_position_callbacks.length > 0) {
-            this.get_current_position_callbacks.forEach(function (callback) {
-                this.log('calling callback with position: ' + new_position);
-                callback(null, new_position);
-            }.bind(this));
-            this.log('Responded to ' + this.get_current_position_callbacks.length + ' CurrentPosition callbacks!');
-            this.get_current_position_callbacks = [];
+            this.complete_get_current_position_callbacks(new_position);
         }
         else if (new_position !== this.current_position && !this.notify_ios_blinds_has_stopped) {
             this.service.getCharacteristic(Characteristic.CurrentPosition).setValue(new_position);
@@ -111,6 +111,56 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
     }.bind(this));
 };
 
+MinimalisticHttpBlinds.prototype.complete_get_current_position_callbacks = function(position) {
+    
+    if (this.get_current_position_callbacks.length > 0) {
+        this.get_current_position_callbacks.forEach(function (callback) {
+            this.log('calling callback with position: ' + position);
+            callback(null, position);
+        }.bind(this));
+        this.log('Responded to ' + this.get_current_position_callbacks.length + ' CurrentPosition callbacks!');
+        this.get_current_position_callbacks = [];
+    }
+}
+
+MinimalisticHttpBlinds.prototype.complete_get_current_state_callbacks = function(state) {
+    
+    if (this.get_current_state_callbacks.length > 0) {
+        this.get_current_state_callbacks.forEach(function (callback) {
+            callback(null, state);
+        }.bind(this));
+        this.log('Responded to ' + this.get_current_state_callbacks.length + ' PositionState callbacks!');
+        this.get_current_state_callbacks = [];
+    }
+}
+
+MinimalisticHttpBlinds.prototype.complete_get_current_state_callbacks = function(state) {
+    
+    if (this.get_current_state_callbacks.length > 0) {
+        this.get_current_state_callbacks.forEach(function (callback) {
+            callback(null, state);
+        }.bind(this));
+        this.log('Responded to ' + this.get_current_state_callbacks.length + ' PositionState callbacks!');
+        this.get_current_state_callbacks = [];
+    }
+}
+
+MinimalisticHttpBlinds.prototype.complete_get_target_position_callbacks = function(state) {
+    // This is ugly: we're faking the target position to either 0, 100 or the current position,
+    // so that iOS's Home App displays the right state (opening, closing, idle)
+    var target_position = this.current_position;
+    if (state === 1) target_position = 100;
+    else if (state === 0) target_position = 0;
+
+    if (this.get_target_position_callbacks.length > 0) {
+        this.get_target_position_callbacks.forEach(function (callback) {
+            callback(null, target_position);
+        }.bind(this));
+        this.log('Responded to ' + this.get_target_position_callbacks.length + ' TargetPosition callbacks!');
+        this.get_target_position_callbacks = [];
+    }
+}
+
 MinimalisticHttpBlinds.prototype.update_current_state = function() {
     request({
         url: this.get_current_state_url,
@@ -120,10 +170,14 @@ MinimalisticHttpBlinds.prototype.update_current_state = function() {
         if (error) {
             this.log('Error when polling current state.');
             this.log(error);
+            this.complete_get_current_state_callbacks(this.current_state);
+            this.complete_get_target_position_callbacks(this.current_state);
             return;
         }
         else if (response.statusCode != this.get_current_state_expected_response_code) {
             this.log('Unexpected HTTP status code when polling current state. Got: ' + response.statusCode + ', expected:' + this.get_current_state_expected_response_code);
+            this.complete_get_current_state_callbacks(this.current_state);
+            this.complete_get_target_position_callbacks(this.current_state);
             return;
         }
 
@@ -133,31 +187,15 @@ MinimalisticHttpBlinds.prototype.update_current_state = function() {
             this.notify_ios_blinds_has_stopped = true;
 
         if (this.get_current_state_callbacks.length > 0) {
-            this.get_current_state_callbacks.forEach(function (callback) {
-                callback(null, new_state);
-            }.bind(this));
-            this.log('Responded to ' + this.get_current_state_callbacks.length + ' PositionState callbacks!');
-            this.get_current_state_callbacks = [];
+            this.complete_get_current_state_callbacks(new_state);
         }
         else if (new_state !== this.current_state) {
             // Sooo, yeah... We're updating PositionState, but iOS doesn't care anyway... we still do it for the lolz.
             this.service.getCharacteristic(Characteristic.PositionState).setValue(new_state);
             this.log('Updated PositionState to value ' + new_state);
         }
-
-        // This is ugly: we're faking the target position to either 0, 100 or the current position,
-        // so that iOS's Home App displays the right state (opening, closing, idle)
-        var target_position = this.current_position;
-        if (new_state === 1) target_position = 100;
-        else if (new_state === 0) target_position = 0;
-
-        if (this.get_target_position_callbacks.length > 0) {
-            this.get_target_position_callbacks.forEach(function (callback) {
-                callback(null, target_position);
-            }.bind(this));
-            this.log('Responded to ' + this.get_target_position_callbacks.length + ' TargetPosition callbacks!');
-            this.get_target_position_callbacks = [];
-        }
+        
+        this.complete_get_target_position_callbacks(this.new_state);
 
         this.current_state = new_state;
     }.bind(this));
