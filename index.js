@@ -29,16 +29,18 @@ function MinimalisticHttpBlinds(log, config) {
     // Optional parameters: polling times
     this.get_current_position_polling_millis = parseInt(config.get_current_position_polling_millis) || 500;
     this.get_current_state_polling_millis    = parseInt(config.get_current_state_polling_millis)    || 500;
+    this.no_cache_duration_millis = parseInt(config.no_cache_duration_millis)    || (1000 * 60);
+
 
     // Internal fields
-    this.current_position = undefined;
-    this.current_state = undefined;
-    this.current_position = 100;
+    this.current_position = 0;
     this.current_state = 2;
 
     this.get_current_position_callbacks = [];
     this.get_target_position_callbacks = [];
     this.get_current_state_callbacks = [];
+
+    this.restart_cache_timer();
 
     // Initializing things
     setInterval(this.update_current_position.bind(this), this.get_current_position_polling_millis);
@@ -52,10 +54,18 @@ MinimalisticHttpBlinds.prototype.init_service = function() {
 
     this.service.getCharacteristic(Characteristic.CurrentPosition).on('get', function(callback) {
         this.get_current_position_callbacks.push(callback);
+        if(!this.cache_timer_active()) {
+            this.log("completing get_current_position from cache");
+            this.complete_get_current_position_callbacks(this.current_position);
+        }
     }.bind(this));
 
     this.service.getCharacteristic(Characteristic.TargetPosition).on('get', function(callback) {
         this.get_target_position_callbacks.push(callback);
+        if(!this.cache_timer_active()) {
+            this.log("completing complete_get_target_position_callbacks from cache");
+            this.complete_get_target_position_callbacks(this.current_state);
+        }
     }.bind(this));
     this.service.getCharacteristic(Characteristic.TargetPosition).on('set', this.set_target_position.bind(this));
 
@@ -65,6 +75,10 @@ MinimalisticHttpBlinds.prototype.init_service = function() {
     // But in any case, let's still implement it
     this.service.getCharacteristic(Characteristic.PositionState).on('get', function() {
         this.get_current_state_callbacks.push(callback);
+        if(!this.cache_timer_active()) {
+            this.log("completing complete_get_current_state_callbacks from cache");
+            this.complete_get_current_state_callbacks(this.current_state);
+        }
     }.bind(this));
 };
 
@@ -134,16 +148,6 @@ MinimalisticHttpBlinds.prototype.complete_get_current_state_callbacks = function
     }
 }
 
-MinimalisticHttpBlinds.prototype.complete_get_current_state_callbacks = function(state) {
-    
-    if (this.get_current_state_callbacks.length > 0) {
-        this.get_current_state_callbacks.forEach(function (callback) {
-            callback(null, state);
-        }.bind(this));
-        this.log('Responded to ' + this.get_current_state_callbacks.length + ' PositionState callbacks!');
-        this.get_current_state_callbacks = [];
-    }
-}
 
 MinimalisticHttpBlinds.prototype.complete_get_target_position_callbacks = function(state) {
     // This is ugly: we're faking the target position to either 0, 100 or the current position,
@@ -201,8 +205,26 @@ MinimalisticHttpBlinds.prototype.update_current_state = function() {
     }.bind(this));
 };
 
+MinimalisticHttpBlinds.prototype.stop_cache_timer = function() {
+    if(this.cache_timer_active())
+    {
+        clearTimeout(this.stop_using_cache_timer);
+    }
+    this.stop_using_cache_timer = null;
+}
+MinimalisticHttpBlinds.prototype.cache_timer_active = function() {
+    return this.stop_using_cache_timer !== null;
+}
+
+MinimalisticHttpBlinds.prototype.restart_cache_timer = function() {
+    this.stop_cache_timer();
+    this.stop_using_cache_timer = setTimeout(this.stop_cache_timer.bind(this), this.no_cache_duration_millis);
+}
 
 MinimalisticHttpBlinds.prototype.set_target_position = function(position, callback, context) {
+
+    this.restart_cache_timer();
+
     if (context && context.plz_do_not_actually_move_the_blinds) {
         this.log('set_target_position is ignoring an actual request...');
         callback(null, position);
