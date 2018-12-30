@@ -33,8 +33,11 @@ function MinimalisticHttpBlinds(log, config) {
 
 
     // Internal fields
-    this.current_position = 0;
-    this.current_state = 2;
+    this.current_position = undefined;
+    this.current_state = undefined;
+    this.current_position_error = new Error("Uninitialized");
+    this.current_state_error = new Error("Uninitialized");
+
 
     this.get_current_position_callbacks = [];
     this.get_target_position_callbacks = [];
@@ -56,7 +59,7 @@ MinimalisticHttpBlinds.prototype.init_service = function() {
         this.get_current_position_callbacks.push(callback);
         if(!this.cache_timer_active()) {
             this.log("completing get_current_position from cache");
-            this.complete_get_current_position_callbacks(this.current_position);
+            this.complete_get_current_position_callbacks(this.current_position, this.current_position_error);
         }
     }.bind(this));
 
@@ -64,7 +67,7 @@ MinimalisticHttpBlinds.prototype.init_service = function() {
         this.get_target_position_callbacks.push(callback);
         if(!this.cache_timer_active()) {
             this.log("completing complete_get_target_position_callbacks from cache");
-            this.complete_get_target_position_callbacks(this.current_state);
+            this.complete_get_target_position_callbacks(this.current_state, this.current_state_error);
         }
     }.bind(this));
     this.service.getCharacteristic(Characteristic.TargetPosition).on('set', this.set_target_position.bind(this));
@@ -77,7 +80,7 @@ MinimalisticHttpBlinds.prototype.init_service = function() {
         this.get_current_state_callbacks.push(callback);
         if(!this.cache_timer_active()) {
             this.log("completing complete_get_current_state_callbacks from cache");
-            this.complete_get_current_state_callbacks(this.current_state);
+            this.complete_get_current_state_callbacks(this.current_state, this.current_state_error);
         }
     }.bind(this));
 };
@@ -91,12 +94,14 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
         if (error) {
             this.log('Error when polling current position.');
             this.log(error);
-            this.complete_get_current_position_callbacks(this.current_position);
+            this.current_position_error = error;
+            this.complete_get_current_position_callbacks(this.current_position, this.current_position_error);
             return;
         }
         else if (response.statusCode != this.get_current_position_expected_response_code) {
             this.log('Unexpected HTTP status code when polling current position. Got: ' + response.statusCode + ', expected:' + this.get_current_position_expected_response_code);
-            this.complete_get_current_position_callbacks(this.current_position);
+            this.current_position_error = new Error("Error when polling current position.");
+            this.complete_get_current_position_callbacks(this.current_position, this.current_position_error);
             return;
         }
 
@@ -104,7 +109,7 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
 
 
         if (this.get_current_position_callbacks.length > 0) {
-            this.complete_get_current_position_callbacks(new_position);
+            this.complete_get_current_position_callbacks(new_position, null);
         }
         else if (new_position !== this.current_position && !this.notify_ios_blinds_has_stopped) {
             this.service.getCharacteristic(Characteristic.CurrentPosition).setValue(new_position);
@@ -122,26 +127,38 @@ MinimalisticHttpBlinds.prototype.update_current_position = function() {
         }
 
         this.current_position = new_position;
+        this.current_position_error = null;
     }.bind(this));
 };
 
-MinimalisticHttpBlinds.prototype.complete_get_current_position_callbacks = function(position) {
-    
+MinimalisticHttpBlinds.prototype.complete_get_current_position_callbacks = function(position, error) {
+
     if (this.get_current_position_callbacks.length > 0) {
         this.get_current_position_callbacks.forEach(function (callback) {
-            this.log('calling callback with position: ' + position);
-            callback(null, position);
+            if(error !== null){
+                this.log('calling callback with error: ' + error);
+                callback(error);
+            }
+            else{
+                this.log('calling callback with position: ' + position);
+                callback(null, position);
+            }
         }.bind(this));
         this.log('Responded to ' + this.get_current_position_callbacks.length + ' CurrentPosition callbacks!');
         this.get_current_position_callbacks = [];
     }
 }
 
-MinimalisticHttpBlinds.prototype.complete_get_current_state_callbacks = function(state) {
-    
+MinimalisticHttpBlinds.prototype.complete_get_current_state_callbacks = function(state, error) {
+
     if (this.get_current_state_callbacks.length > 0) {
         this.get_current_state_callbacks.forEach(function (callback) {
-            callback(null, state);
+            if(error !== null){
+                callback(error);
+            }
+            else{
+                callback(null, state);
+            }
         }.bind(this));
         this.log('Responded to ' + this.get_current_state_callbacks.length + ' PositionState callbacks!');
         this.get_current_state_callbacks = [];
@@ -149,7 +166,7 @@ MinimalisticHttpBlinds.prototype.complete_get_current_state_callbacks = function
 }
 
 
-MinimalisticHttpBlinds.prototype.complete_get_target_position_callbacks = function(state) {
+MinimalisticHttpBlinds.prototype.complete_get_target_position_callbacks = function(state, error) {
     // This is ugly: we're faking the target position to either 0, 100 or the current position,
     // so that iOS's Home App displays the right state (opening, closing, idle)
     var target_position = this.current_position;
@@ -158,7 +175,12 @@ MinimalisticHttpBlinds.prototype.complete_get_target_position_callbacks = functi
 
     if (this.get_target_position_callbacks.length > 0) {
         this.get_target_position_callbacks.forEach(function (callback) {
-            callback(null, target_position);
+            if(error !== null){
+                callback(error);
+            }
+            else{
+                callback(null, target_position);
+            }
         }.bind(this));
         this.log('Responded to ' + this.get_target_position_callbacks.length + ' TargetPosition callbacks!');
         this.get_target_position_callbacks = [];
@@ -174,14 +196,16 @@ MinimalisticHttpBlinds.prototype.update_current_state = function() {
         if (error) {
             this.log('Error when polling current state.');
             this.log(error);
-            this.complete_get_current_state_callbacks(this.current_state);
-            this.complete_get_target_position_callbacks(this.current_state);
+            this.current_state_error = error;
+            this.complete_get_current_state_callbacks(this.current_state, this.current_state_error);
+            this.complete_get_target_position_callbacks(this.current_state, this.current_state_error);
             return;
         }
         else if (response.statusCode != this.get_current_state_expected_response_code) {
             this.log('Unexpected HTTP status code when polling current state. Got: ' + response.statusCode + ', expected:' + this.get_current_state_expected_response_code);
-            this.complete_get_current_state_callbacks(this.current_state);
-            this.complete_get_target_position_callbacks(this.current_state);
+            this.current_state_error = new Error("Error polling state");
+            this.complete_get_current_state_callbacks(this.current_state, this.current_state_error);
+            this.complete_get_target_position_callbacks(this.current_state, this.current_state_error);
             return;
         }
 
@@ -198,10 +222,11 @@ MinimalisticHttpBlinds.prototype.update_current_state = function() {
             this.service.getCharacteristic(Characteristic.PositionState).setValue(new_state);
             this.log('Updated PositionState to value ' + new_state);
         }
-        
-        this.complete_get_target_position_callbacks(this.new_state);
 
         this.current_state = new_state;
+        this.current_state_error = null;
+
+        this.complete_get_target_position_callbacks(this.current_state, this.current_state_error);
     }.bind(this));
 };
 
@@ -227,7 +252,7 @@ MinimalisticHttpBlinds.prototype.set_target_position = function(position, callba
 
     if (context && context.plz_do_not_actually_move_the_blinds) {
         this.log('set_target_position is ignoring an actual request...');
-        callback(null, position);
+        callback(new Error('set_target_position is ignoring an actual request...'));
         return;
     }
 
@@ -238,6 +263,7 @@ MinimalisticHttpBlinds.prototype.set_target_position = function(position, callba
     }, function(error, response, body) {
         if (error || response.statusCode != this.set_target_position_expected_response_code) {
             this.log('Error when setting new target position: ' + body);
+            callback(error || new Error("Error updating shade position."));
             return;
         }
         this.log('Target position set to ' + position);
