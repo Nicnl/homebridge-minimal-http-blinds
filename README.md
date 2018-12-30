@@ -8,6 +8,7 @@ The features:
 - You can control your own blinds/roller shutters apparatus with three minimalistic HTTP requests.
 - The control is not a simple binary open/close: **it support percentages**. You can open your blinds at 50% or 65% for instance.
 - Your blinds can still be manually operated. As long at the `get_current_position_url` returns the right value, this plugin will update iOS Home app in real time.
+- Instant reporting using cached data if no recent (`no_cache_duration_millis`) app detected activity.
 
 ### Who is it for?
 
@@ -80,7 +81,8 @@ Here are them all with their default values.
     "get_current_state_expected_response_code": "200",
     
     "get_current_position_polling_millis": "500",
-    "get_current_state_polling_millis": "500"
+    "get_current_state_polling_millis": "500",
+    "no_cache_duration_millis": "60000"
 }
 ````
 
