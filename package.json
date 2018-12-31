@@ -1,7 +1,7 @@
 {
   "name": "homebridge-minimal-http-blinds",
   "description": "Minimalistic HTTP blinds management *that supports percentages* for diy-ish projects.",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "repository": {
     "type": "git",
     "url": "git://github.com/Nicnl/homebridge-minimal-http-blinds.git"
