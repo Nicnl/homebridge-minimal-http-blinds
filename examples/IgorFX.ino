@@ -12,7 +12,6 @@
 #include <ArduinoOTA.h>
 #include <RCSwitch.h> //RF433 library
 #define HALFSTEP 8
-}
 
 // Stepper pins setup
 #define Pin1 14 // IN1 ULN2003 
