@@ -1,3 +1,9 @@
+/* config.json file for homebridge-minimal-http-blinds
+"get_current_position_url": "http://192.168.0.100/position",
+"set_target_position_url": "http://192.168.0.100/set?persent=%position%",
+"get_current_state_url": "http://192.168.0.100/state"
+*/
+
 #include <ESP8266WiFi.h> 
 #include <ESP8266WebServer.h>
 #include <AccelStepper.h> //Stepper motor super library :p
@@ -29,11 +35,11 @@ IPAddress gateway(192, 168, 0, 1);
 IPAddress subnet(255, 255, 255, 0);
 ESP8266WebServer server(80); // WebServer Port
 
-String pers; // %% from Homebridge
-int w_state = 0; // "0" close, "1" open, "2" idle
+String persent; // %% from Homebridge
+int blinds_state = 0; // "0" close, "1" open, "2" idle
 
 void handleRoot(); // Hellow World) Classic !!!
-void handleLogin(); // POST Homebridge Plugin http-minimal-blinds
+void handleSet(); // POST Homebridge Plugin http-minimal-blinds
 void handleNotFound(); // Wrong request
 void handleState(); // Homebridge state update 0,1,2
 void handlePosition(); // Homebridge position update
@@ -58,32 +64,24 @@ mySwitch.enableReceive(D1);
 pinMode(LED_BUILTIN, OUTPUT);
 digitalWrite(LED_BUILTIN, HIGH);
 
-// If need Serial port
-// Serial.begin(115200);
-
+// WiFi Connection
 WiFi.mode(WIFI_STA);
 WiFi.begin(ssid, password); // Connect to WiFi
-// Serial.println("");
 while (WiFi.status() != WL_CONNECTED) // Waiting connect
 {
 delay(250);
-// Serial.print(".");
 }
 
 ArduinoOTA.setPort(8267); // Port OTA
 ArduinoOTA.setHostname("WeMos-klw"); // Host name
-// ArduinoOTA.setPassword((const char *)"123");
 ArduinoOTA.onStart([]() {
-//Serial.println("Start"); 
 });
 ArduinoOTA.onEnd([]() {
-//Serial.println("\nEnd"); 
 });
 ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-//Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
 });
 ArduinoOTA.onError([](ota_error_t error) {
-//Serial.printf("Error[%u]: ", error);
+
 if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed"); 
 else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed"); 
 else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed"); 
@@ -91,9 +89,7 @@ else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
 else if (error == OTA_END_ERROR) Serial.println("End Failed"); 
 });
 ArduinoOTA.begin();
-//Serial.println("Ready");
-//Serial.print("IP address: ");
-//Serial.println(WiFi.localIP());
+
 blink();
 blink();
 
@@ -102,10 +98,10 @@ blink();
 server.on("/state", HTTP_GET, handleState); // State
 server.on("/position", HTTP_GET, handlePosition); // Position 0 - 100
 server.on("/", HTTP_GET, handleRoot); // Hellow World)
-server.on("/set", HTTP_POST, handleLogin); //Position from Homebridge
+server.on("/set", HTTP_POST, handleSet); //Position from Homebridge
 server.onNotFound(handleNotFound); //Wrong request
 server.begin();
-//Serial.println("HTTP server started");
+
 }
 
 void loop(void)
@@ -119,18 +115,18 @@ if (mySwitch.available())
 int value = mySwitch.getReceivedValue(); // RF signal to full open
 if (value == 8983009)
 {
-pers = "100";
-w_state = 1;
-int persent = pers.toInt();
-stepper.moveTo(persent * 192);
+persent = "100";
+blinds_state = 1;
+int persents = persent.toInt();
+stepper.moveTo(persents * 192);
 stepper.run();
 }
 if (value == 8983010) // RF signal for close
 {
-pers = "0";
-w_state = 0;
-int persent = pers.toInt();
-stepper.moveTo(persent * 192);
+persent = "0";
+blinds_state = 0;
+int persents = persent.toInt();
+stepper.moveTo(persents * 192);
 stepper.run();
 }
 mySwitch.resetAvailable();
@@ -146,17 +142,16 @@ void handleRoot()
 stepper.run();
 server.send(200, "text/plain", "Hello World");
 }
-void handleLogin()
+void handleSet()
 {
-pers = server.arg("pers"); // Get persentage of position string
-int persent = pers.toInt();
-if ( persent >= 0 && persent <= 100 )
+persents = server.arg("persent"); // Get persentage of position string
+int persents = persent.toInt();
+if ( persents >= 0 && persents <= 100 )
 {
-w_state = 2;
-stepper.moveTo(persent * 192);
+blinds_state = 2;
+stepper.moveTo(persents * 192);
 stepper.run();
-// Serial.print("Position :" + pers);
-server.send(204, "text/plain", server.arg("set"));
+server.send(204, "text/plain");
 }
 else
 {
@@ -166,23 +161,21 @@ server.send(401, "text/plain", "401: Wrong Position");
 void handlePosition()
 {
 stepper.run();
-server.send(200, "text/plain", String(pers)); //Current position 0 - 100
+server.send(200, "text/plain", String(persents)); //Current position 0 - 100
 }
 void handleState()
 {
 stepper.run();
-if (pers == "0") {
-w_state = 0;
+if (persent == "0") {
+blinds_state = 0;
 }
-if (pers == "100") {
-w_state = 1;
+if (persent == "100") {
+blinds_state = 1;
 }
-if (pers != "0" && pers != "100") {
-w_state = 2;
+if (persent != "0" && persent != "100") {
+blinds_state = 2;
 }
-//String respMsg = "State is Closing \n";
-server.send(200, "text/plain", String(w_state)); // Current state "0" close, "1" open, "2" idle
-//Serial.println(w_state);
+server.send(200, "text/plain", String(blinds_state)); // Current state "0" close, "1" open, "2" idle
 }
 void handleNotFound()
 {
