@@ -76,7 +76,7 @@ MinimalisticHttpBlinds.prototype.init_service = function() {
     // It absolutely doesn't care about Characteristic.PositionState, which is supposed to be :
     // PositionState.INCREASING = 1, PositionState.DECREASING = 0 or PositionState.STOPPED = 2
     // But in any case, let's still implement it
-    this.service.getCharacteristic(Characteristic.PositionState).on('get', function() {
+    this.service.getCharacteristic(Characteristic.PositionState).on('get', function(callback) {
         this.get_current_state_callbacks.push(callback);
         if(!this.cache_timer_active()) {
             this.log("completing complete_get_current_state_callbacks from cache");
